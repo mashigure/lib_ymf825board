@@ -76,9 +76,9 @@ void Ymf825Board::setVoiceChVol(int voice_no, int ch_vol)
 
     Write( 0x0B, voice_no); //voice num
 
-    value = ( Read(0x10) & 0x01 )| ((unsigned char)ch_vol<<2);
+    value = ( Read(0x10) & 0x01 ) | ((unsigned char)ch_vol<<2);
 
-    Write( 0x10, value   ); // chvol(Voice Volume) | DIR_CV
+    Write( 0x10, value );   // chvol(Voice Volume) | DIR_CV
 }
 
 
@@ -88,13 +88,15 @@ boolean Ymf825Board::keyon(int voice_no, int tone_no, int note, int velocity)
     const unsigned char fnumh[] = { 18,  18, 26, 26, 26, 26,  26, 34, 34, 34,  34, 42,  19,  19, 27, 27, 27, 27,  27, 35, 35, 35,  35, 43,  20,  20, 28, 28, 28, 28,  28, 36, 36, 36,  36, 44,  21,  21, 29, 29, 29, 29,  29, 37, 37, 37,  37, 45,  22,  22, 30, 30, 30, 30,  30, 38, 38, 38,  38, 46,  23};
     const unsigned char fnuml[] = {101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101};
 
-    if(( voice_no < 0   ) || ( 15 < voice_no         )) return false;
-    if(( tone_no  < 0   ) || ( max_tone_num< tone_no )) return false;
-    if(( note < NOTE_C0 ) || ( NOTE_C6 < note        )) return false;
+    if(( voice_no < 0   ) || ( 15 < voice_no          )) return false;
+    if(( tone_no  < 0   ) || ( max_tone_num < tone_no )) return false;
+    if(( note < NOTE_C0 ) || ( NOTE_C5 < note         )) return false;
 
     if( velocity <  0 ) velocity =  0;
     if( 31 < velocity ) velocity = 31;
     velocity <<= 2;
+
+    note -= NOTE_C0; 
 
     Write( 0x0B, voice_no       ); //voice num
     Write( 0x0C, velocity       ); //vovol
