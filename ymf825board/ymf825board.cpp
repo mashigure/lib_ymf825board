@@ -11,6 +11,13 @@
 Ymf825Board::Ymf825Board()
 {
     max_tone_num = 0;
+    voice_itr    = 0;
+
+    for (int i=0; i<MAX_VOICE_NUM; i++)
+    {
+        voice_holding_note[i] = -1;
+        voice_holding_ch[i]   = -1;
+    }
 }
 
 
@@ -67,14 +74,14 @@ void Ymf825Board::initAllVoiceCh(void)
 
 
 /* 音声チャンネルの音量設定 */
-void Ymf825Board::setVoiceChVol(int voice_no, int ch_vol)
+void Ymf825Board::setVoiceChVol(int voice_ch, int ch_vol)
 {
     unsigned char value = 0;
 
-    if(( voice_no < 0 ) || ( 15 < voice_no )) return;
+    if(( voice_ch < 0 ) || ( 15 < voice_ch )) return;
     if(( ch_vol   < 0 ) || ( 31 < ch_vol   )) return;
 
-    Write( 0x0B, voice_no); //voice num
+    Write( 0x0B, voice_ch); //voice num
 
     value = ( Read(0x10) & 0x01 ) | ((unsigned char)ch_vol<<2);
 
@@ -83,14 +90,48 @@ void Ymf825Board::setVoiceChVol(int voice_no, int ch_vol)
 
 
 /* 指定音声の再生 */
-boolean Ymf825Board::keyon(int voice_no, int tone_no, int note, int velocity)
+boolean Ymf825Board::noteon(int ch, int note, int velocity=31)
+{
+    boolean result;
+
+    result = keyon(voice_itr, ch, note, velocity);
+
+    if (result)
+    {
+        voice_holding_ch[voice_itr]   = ch;
+        voice_holding_note[voice_itr] = note;
+        voice_itr = (voice_itr + 1) % MAX_VOICE_NUM;
+    }
+
+    return result;
+}
+
+
+/* 引数で指定したCh, 音程の音声をOFF */
+void Ymf825Board::noteoff(int ch, int note)
+{
+    for (int i=0; i<MAX_VOICE_NUM; i++)
+    {
+        if ((voice_holding_ch[i] == ch) && (voice_holding_note[i] == note))
+        {
+            keyoff(i);
+            voice_holding_ch[i]   = -1;
+            voice_holding_note[i] = -1;
+            break;
+        }
+    }
+}
+
+
+/* 指定音声の再生 */
+boolean Ymf825Board::keyon(int voice_ch, int ch, int note, int velocity)
 {
     const unsigned char fnumh[] = { 18,  18, 26, 26, 26, 26,  26, 34, 34, 34,  34, 42,  19,  19, 27, 27, 27, 27,  27, 35, 35, 35,  35, 43,  20,  20, 28, 28, 28, 28,  28, 36, 36, 36,  36, 44,  21,  21, 29, 29, 29, 29,  29, 37, 37, 37,  37, 45,  22,  22, 30, 30, 30, 30,  30, 38, 38, 38,  38, 46,  23};
     const unsigned char fnuml[] = {101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101, 122, 17, 41, 66, 93, 121, 23, 55, 89, 125, 34, 101};
 
-    if(( voice_no < 0   ) || ( 15 < voice_no          )) return false;
-    if(( tone_no  < 0   ) || ( max_tone_num < tone_no )) return false;
-    if(( note < NOTE_C0 ) || ( NOTE_C5 < note         )) return false;
+    if(( voice_ch < 0   ) || ( MAX_VOICE_NUM <= voice_ch )) return false;
+    if(( ch       < 0   ) || ( max_tone_num  < ch        )) return false;
+    if(( note < NOTE_C0 ) || ( NOTE_C5       < note      )) return false;
 
     if( velocity <  0 ) velocity =  0;
     if( 31 < velocity ) velocity = 31;
@@ -98,22 +139,22 @@ boolean Ymf825Board::keyon(int voice_no, int tone_no, int note, int velocity)
 
     note -= NOTE_C0; 
 
-    Write( 0x0B, voice_no       ); //voice num
-    Write( 0x0C, velocity       ); //vovol
+    Write( 0x0B, voice_ch       ); //voice num
+    Write( 0x0C, velocity       ); //voice volume
     Write( 0x0D, fnumh[note]    ); //fnum
     Write( 0x0E, fnuml[note]    ); //fnum
-    Write( 0x0F, 0x40 | tone_no ); //keyon=1 | tone num
+    Write( 0x0F, 0x40 | ch      ); //keyon=1 | tone num
 
     return true;
 }
 
 
 /* 引数で指定した音声番号の音声をOFF */
-void Ymf825Board::keyoff(int voice_no)
+void Ymf825Board::keyoff(int voice_ch)
 {
-    if(( voice_no < 0 ) || ( 15 < voice_no )) return;
+    if(( voice_ch < 0 ) || ( MAX_VOICE_NUM <= voice_ch )) return;
 
-    Write( 0x0B, voice_no & 0x0F ); //voice num
+    Write( 0x0B, voice_ch & 0x0F ); //voice num
     Write( 0x0F, 0x00 );//keyon = 0
 }
 

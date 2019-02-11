@@ -72,6 +72,8 @@
 #define NOTE_B4     (95)
 #define NOTE_C5     (96)
 
+#define MAX_VOICE_NUM  (16)   /* 仕様 */
+
 
 /* オペレータクラス */
 class Operator
@@ -157,15 +159,20 @@ class Ymf825Board
     int pin_rst;
     int pin_ss;
     int max_tone_num;
+    int voice_holding_note[16];
+    int voice_holding_ch[16];
+    int voice_itr;
 
 public:
     Ymf825Board();
     void    initBoard(int rst=9, int ss=10, int power=0);
     void    setTone(ToneData *tone_data);
     void    initAllVoiceCh(void);
-    void    setVoiceChVol(int voice_no, int ch_vol);
-    boolean keyon(int voice_no, int tone_no, int note, int velocity=31);
-    void    keyoff(int voice_no);
+    void    setVoiceChVol(int voice_ch, int ch_vol);
+    boolean noteon(int ch, int note, int velocity=31);
+    void    noteoff(int ch, int note);
+    boolean keyon(int voice_ch, int ch, int note, int velocity=31);
+    void    keyoff(int voice_ch);
     boolean setMasterVol(int vol);
     boolean setGain(int gain);
     void    setDirMute(boolean disable);
